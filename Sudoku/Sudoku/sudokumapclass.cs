@@ -13,14 +13,14 @@ namespace Sudoku
         private int  sudokusize;
         private int edgelength;
         private int[,]  map;
-        //private int[,] solvedmap;
-        public int[,] solvedmap;
-        private int[,] ablenum;
+        private int[,] solvedmap;
+        //private int[,] ablenum;
         private bool[,] rowused;
         private bool[,] columnused;
         private bool[,] nineused;
         private bool created;
         private  Random rander = new Random();
+        public List<string> errorlog=new List<string>();
         public sudokumap(){}
         public sudokumap(int size)
         {
@@ -31,12 +31,13 @@ namespace Sudoku
                 edgelength = size * size;
                 solvedmap = new int[edgelength + 1, edgelength + 1];
                 map = new int[edgelength + 1, edgelength + 1];
-                ablenum = new int[edgelength + 1, edgelength + 1];
+                //ablenum = new int[edgelength + 1, edgelength + 1];
                 rowused = new bool[edgelength + 1, edgelength + 1];
                 columnused = new bool[edgelength + 1, edgelength + 1];
                 nineused = new bool[edgelength + 1, edgelength + 1];
                 for (int i = 1; i <= edgelength; i++) for (int j = 1; j <= edgelength; j++)
                     {
+                        solvedmap[i, j] = 0;
                         map[i, j] = 0;
                         rowused[i, j] = false;
                         columnused[i, j] = false;
@@ -56,6 +57,16 @@ namespace Sudoku
                 rowused[i, j] = false;
                 columnused[i,j]=false;
                 nineused[i,j]=false;
+            }
+        }
+        public int size
+        {
+            get
+            {
+                return sudokusize;
+            }
+            set
+            {
             }
         }
         public int nine(int x,int y)
@@ -109,11 +120,13 @@ namespace Sudoku
                 return 0;
             }
         }
-        //public bool is
         public bool setnumber(int x, int y, int num)
         {
             if (!this.issetted(x, y))
             {
+                rowused[x,num]=true;
+                columnused[y,num]=true;
+                nineused[nine(x, y), num] = true;
                 map[x, y] = num;
                 return true;
             }
@@ -133,13 +146,8 @@ namespace Sudoku
             try
             {
                 int insertnumber = edgelength*level/5+edgelength*sudokusize;
-                //return insertnumber;
-                //DateTime timer=new DateTime();
                 int randx, randy,number;
-               
-                //inter = rand.Next(1, edgelength + 1);
-                //return inter;
-                //while (true)
+                while (true)
                 {
                     for (int i = insertnumber; i > 0; )
                     {
@@ -152,9 +160,19 @@ namespace Sudoku
                             i--;
                         }
                     }
-                    //int sign = this.solve();
-                    created = true;
-                    //break;
+                    bool sign = this.solve();
+                    if (sign)
+                    {
+                        for (int i = 0; i < edgelength * edgelength; i++)
+                        {
+                            solvedmap[lists[ans[i]].x, lists[ans[i]].y] = lists[ans[i]].num;
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        clear();
+                    }
                 }
                 if (created) return true;
                 else return false;
@@ -189,29 +207,30 @@ namespace Sudoku
                 return false;
             }
         }
-        //private point[] lists;
-        public point[] lists;
-        //private struct point
-        public struct point
+        private point[] lists;
+        private struct point
         {
             public int up, down, right, left, column, sum;
             public int x,y,num;
         };
-        //private int[] ans;
-        public int[] ans;
+        private int[] ans;
         private void insert(int sign ,int x,int y,int num)
         {
             int[] col = new int[4]{(x-1)*edgelength+y,
             edgelength*edgelength+(x-1)*edgelength+num,
             2*edgelength*edgelength+(y-1)*edgelength+num,
             3*edgelength*edgelength+(nine(x,y)-1)*edgelength+num};
+            lists[sign].up = col[0];
+            lists[sign].down = col[1];
+            lists[sign].left = col[2];
+            lists[sign].right = col[3];
             for (int i = 0; i <= 3; i++)
             {
-                lists[sign+i].left = sign+i - 1;
-                lists[sign+i].right =sign+ i + 1;
+                lists[sign + i].left = sign + i - 1;
+                lists[sign + i].right = sign + i + 1;
                 lists[lists[col[i]].up].down = sign + i;
                 lists[sign + i].up = lists[col[i]].up;
-                lists[col[i]].up = sign + 1;
+                lists[col[i]].up = sign + i;
                 lists[sign + i].down = col[i];
                 lists[sign + i].column = col[i];
                 lists[col[i]].sum++;
@@ -258,6 +277,7 @@ namespace Sudoku
         }
         private void removec(int x)
         {
+            //errorlog.Add("remove"+x.ToString());
             int i, j;
             lists[0].sum--;
             lists[lists[x].left].right= lists[x].right;
@@ -271,6 +291,7 @@ namespace Sudoku
         }
         private void resumec(int x)
         {
+            //errorlog.Add("resume" + x.ToString());
             int i, j;
             lists[0].sum++;
             for (i = lists[x].up; i != x; i = lists[i].up) for (j = lists[i].left; j != i; j = lists[j].left)
@@ -284,6 +305,7 @@ namespace Sudoku
         }
         private int dance(int x)
         {
+            //errorlog.Add("dance" + x.ToString());
             if (lists[0].right == 0)
             {
                 return 1;
